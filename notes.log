@@ -2,7 +2,7 @@ Installing TAP on AWS US-EAST-2 (Ohio)
 IAM: hn-eksClusterRole
 Cluster name: tap-on-aws
 OIDC endpoint: oidc.eks.us-east-2.amazonaws.com/id/AB6A14ADAC41CFF179F8E94CF1758547
-
+TK: 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
 
 
 Documents:
@@ -297,5 +297,154 @@ tanzu package installed update tap --package-name tap.tanzu.vmware.com --version
 --values-file tap-values.yaml -n tap-install
 
 
+I had to create a Cname record and A record on my GoDaddy domain - fitechsolutions.org
+CNAME | * | fitechsolutions.org
+A Record | @ | AWS LB IPs
+
+Using Namespace Provisioner Controller
+
+kubectl create namespace hn-dev
+kubectl label namespaces hn-dev apps.tanzu.vmware.com/tap-ns=""
+kubectl get secrets,serviceaccount,rolebinding,pods,workload,configmap -n hn-dev
+
+cat <<EOF | kubectl -n hn-dev apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-deliverable
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deliverable
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-workload
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload
+subjects:
+  - kind: ServiceAccount
+    name: default
+EOF
+
+
+GitHub developer settings.
+https://github.com/settings/developers
+    Application name: tap-app
+    Homepage URL: 
+    Application description
+    Authorization callback URL: https://tap-gui.fitechsolutions.org
+
+Github:
+      development:
+        clientId: 3519b23ed83d54471da3
+        clientSecret: 9a0a2dac507c73778dcb6a795bd2b5981a06d4f8
+
+
+
+tap_gui:
+  app_config:
+    customize:
+      custom_name: "Bank Of America TAP POC"
+    integrations:
+      github:
+        - host: github.com
+    auth:
+      environment: development
+      providers:
+        github:
+          development:
+            clientId: 3519b23ed83d54471da3
+            clientSecret: 9a0a2dac507c73778dcb6a795bd2b5981a06d4f8
+
+Create the workload
+tanzu apps workload create tanzu-java-web-app \
+  --git-repo https://github.com/vmware-tanzu/application-accelerator-samples \
+  --sub-path tanzu-java-web-app \
+  --git-branch main \
+  --type web \
+  --label app.kubernetes.io/part-of=tanzu-java-web-app \
+  --yes \
+  --namespace hn-dev
+
+
+tanzu apps workload create tanzu-java-web-app   --git-repo https://github.com/vmware-tanzu/application-accelerator-samples   --sub-path tanzu-java-web-app   --git-branch main   --type web   --label app.kubernetes.io/part-of=tanzu-java-web-app   --yes   --namespace hn-dev
+
+
+
+tanzu apps workload tail tanzu-java-web-app --namespace hn-dev --timestamp --since 1h
+tanzu apps workload list -A
+tanzu apps workload delete tanzu-java-web-app -n hn-dev
+
+
+cat <<EOF | kubectl -n hn-dev apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tap-registry
+  annotations:
+    secretgen.carvel.dev/image-pull-secret: ""
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: e30K
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+secrets:
+  - name: registry-credentials
+imagePullSecrets:
+  - name: registry-credentials
+  - name: tap-registry
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-deliverable
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deliverable
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-workload
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload
+subjects:
+  - kind: ServiceAccount
+    name: default
+EOF
+
+cat <<EOF | kubectl -n hn-dev apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
+imagePullSecrets:
+  - name: tap-registry
+EOF
 
 

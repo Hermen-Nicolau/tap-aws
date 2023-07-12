@@ -1,5 +1,5 @@
 shared:
-  ingress_domain: " hn.tap.com"
+  ingress_domain: "fitechsolutions.org"
 
 ceip_policy_disclosed: true
 
@@ -50,27 +50,43 @@ ootb_templates:
 tap_gui:
 # Existing tap-values.yaml above
   app_config:
+    customize:
+       custom_name: "Fitech Solutions"
     app:
-      baseUrl: http://tap-gui.hn.tap.com # No port needed with Ingress
+      baseUrl: https://tap-gui.fitechsolutions.org # No port needed with Ingress
     integrations:
       github: # Other are integrations available
         - host: github.com
-          token: GITHUB-TOKEN
+          #token: "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"
     catalog:
       locations:
         - type: url
-          target: https://github.com/sample-accelerators/tanzu-java-web-app/blob/main/catalog/catalog-info.yaml
+          target: https://github.com/Hermen-Nicolau/tap-aws/blob/main/tap-gui-yelb-catalog/yelb-catalog/catalog-info.yaml
     backend:
-      baseUrl: http://tap-gui.hn.tap.com # No port needed with Ingress
+      baseUrl: https://tap-gui.fitechsolutions.org # No port needed with Ingress
       cors:
-        origin: http://tap-gui.hn.tap.com # No port needed with Ingress
+        origin: https://tap-gui.fitechsolutions.org # No port needed with Ingress
+    auth:
+      environment: development
+      providers:
+        github:
+          development:
+            clientId: 3519b23ed83d54471da3
+            clientSecret: 9a0a2dac507c73778dcb6a795bd2b5981a06d4f8
 # tap_gui:
-#   service_type: LoadBalancer
 #   app_config:
-#     catalog:
-#       locations:
-#         - type: url
-#           target: https://gui.hn.tap/catalog-info.yaml
+#     customize:
+#       custom_name: "Bank Of America TAP POC"
+#     integrations:
+#       github:
+#         - host: github.com
+#     auth:
+#       environment: development
+#       providers:
+#         github:
+#           development:
+#             clientId: 3519b23ed83d54471da3
+#             clientSecret: 9a0a2dac507c73778dcb6a795bd2b5981a06d4f8
 
 metadata_store:
   ns_for_export_app_cert: "*"
@@ -80,5 +96,23 @@ scanning:
   metadataStore:
     url: "" # Configuration is moved, so set this string to empty.
 
+
+namespace_provisioner:
+  controller: true
+  default_parameters:
+    limits:
+      default:
+        cpu: 1.7
+        memory: 1Gi
+      defaultRequest:
+        cpu: 100m
+        memory: 1Gi
+# additional_sources:
+ # Add templated java scan policy and tekton pipeline
+#  - git:
+#      ref: tap-1.4-np
+#      subPath: namespace-provisioner-gitops-examples/custom-resources/testing-scanning-supplychain
+#      url: https://github.com/vmware-tanzu/application-accelerator-samples.git
+#    path: _ytt_lib/testingscanning   # this user-generated path must always begin with "_ytt_lib/"
 # tap_telemetry:
 #   customer_entitlement_account_number: "CUSTOMER-ENTITLEMENT-ACCOUNT-NUMBER" # (Optional) Identify data for creating Tanzu Application Platform usage reports.
